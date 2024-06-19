@@ -230,7 +230,7 @@ WB.states.2[1:25]
 
 prop.table(table(WB.states.2))
 
-# So overall, across all animals these wildebeest spend about 64% of their time in this resident, likely intensive foraging state, We could also look at this across individuals, which might indicate range residency vs. more nomadic or even migratory behavior.
+# So overall, across all animals these wildebeest spend about 64% of their time in this resident, likely intensive foraging state. We could also look at this across individuals, which might indicate range residency vs. more nomadic or even migratory behavior.
 
 # To look at this metric across individuals we can add the state information back to our data frame, as our states vector is the same length as our data. Here I'm making a new object called stateProps which adds in the new state information, then summarizes the proportion of time spent in each state for each animal. Note the use of .by in the mutate function. This is incredibly handy way of creating a new column of data, that is itself based on a grouping of other data.
 
@@ -255,7 +255,7 @@ stateProps <- WB.data %>%
 
 # Let's plot this information across individuals. Note that here I'm coloring by sex. The information provided here could allow you to ask questions about sex differences, or other individual differences in movement strategy and movement behavior. We can't include a variable like sex in our models here, because the covariate needs to vary time/location. But we can still make comparisons using the behavior state model results.
 
-# I'm ordered the ID column here by the value of stateprop. This is a convenient way to arrange values in a plot to be ordered according to some other value. 
+# I've ordered the ID column here by the value of stateprop. This is a convenient way to arrange values in a plot to be ordered according to some other value. 
 
 stateProps %>%
   filter(state == 1) %>% 
@@ -288,16 +288,6 @@ barplot(test.or$stateProp,
         col = mycols[test.or$sex])
 legend(0.6, 3, legend = c("female", "male"), fill = mycols, horiz=FALSE, bty = "n", cex = 1.5)
 
-barplot(test$stateProp,
-        names.arg = test$ID,
-        horiz = TRUE,
-        xlim=c(0,1),
-        xlab="Proportion Time in State 1 (Foraging/Encamped)",
-        ylab = "Animal ID",
-        col = mycols[test$sex])
-legend(0.6, 3, legend = c("female", "male"), fill = mycols, horiz=FALSE, bty = "n", cex = 1.5)
-
-        
 # So it looks like Kiranto spends the most time in this local foraging state. Let's remind ourselves what his trajectory looks like.
 
 plot(WB.move[WB.move$ID == "Kiranto",],
@@ -308,9 +298,10 @@ plot(WB.move[WB.move$ID == "Kiranto",],
 plot(WB.move[WB.move$ID == "Paita",],
      ask = FALSE)
 
-# Differntiating further between these two animals in terms of overall movement strategy, would be better done with something like a net-squared displacement model, or even mean squared displacement. With these HMM models we are more interested in categorizing segments as particular behavioral states.
+# Differentiating further between these two animals in terms of overall movement strategy, would be better done with something like a net-squared displacement model. With these HMM models we are more interested in categorizing segments as particular behavioral states.
 
-# It also looks like the 3 wildebeest that spent the least time in foraging/encamped state were males. Ans the wildebeest that spent the MOST time in this state were also males. This kind of analysis could also be split in different times of year or different breeding seasons, and in fact breeding state could be used in the models themselves, as it would change over time. 
+# Possible Next Steps:
+# It also looks like the 3 wildebeest that spent the least time in foraging/encamped state were males. And the wildebeest that spent the MOST time in this state were also males. This kind of analysis could also be split in different times of year or different breeding seasons, and in fact breeding state could be used in the models themselves, as it would change over time. 
 
 # We can also look at the actual probabilities assigned to each location for each behavioral state.
 
@@ -338,6 +329,12 @@ plotStates(WB.null,
 
 # Although the package creates automatic plots of trajectories of each animal, with each point colored by predicted state, we have more flexibility if we generate these plots ourselves. Here are some ideas for making custom plots of this information:
 
+# See help(plot.moveHMM)
+plot(WB.null,
+     animals = "Sotua",
+     ask = FALSE)
+
+# Or using ggplot
 WB.data %>% 
   mutate(state = as.factor(WB.states.2)) %>%
   filter(ID == "Sotua") %>% 
@@ -358,24 +355,20 @@ WB.data %>%
        y = "y",
        title = "Sotua")
 
-
-
-
-
 # Model Comparisons and Covariate Testing -----------------------------------------------
+
 # Let's start by looking at the influence of temperature, which was recorded by the GPS collar, on behavioral state transitions. Here I'm indicating the same parameters as above, but now I'm indicating a formula with temperature as a covariate.
 
-wild_m_temp <- fitHMM(data = wild_move, 
+WB.m.Temp <- fitHMM(data = WB.move, 
                       nbStates = 2, 
                       stepPar0 = stepPar0, 
                       anglePar0 = anglePar0, 
                       formula = ~ temp)
 
+WB.m.Temp
 
-wild_m_temp
-
-# This is the canned function in the package to plot the impacts of our covariate.
-plotStationary(wild_m_temp,
+# This is the plotting function included in the package to plot the impacts of our covariate.
+plotStationary(WB.m.Temp,
                plotCI = TRUE)
 
 # We can see that the probability of transitioning to state 1 (the encamped/foraging state) increases as the temperature increases. Of course I don't know how accurate this temperature sensor is, but at least this gives you a sense of how to test a model with covariates. And one could certainly reason that the animals would be less likely to move longer distances when the temperature was very warm.
@@ -383,31 +376,31 @@ plotStationary(wild_m_temp,
 # Let's now test a model with time of day. Hour of the day is a challenging variable to model in a regression equation because the 23rd hour is very close to the zero hour, but if it is modeled as a regular number, this connection will be lost. The conversion below allows us to model the hour of the day in a circular format. You can read a succinct description of this here, even though the coding part of the page is not in R:
 # https://ianlondon.github.io/blog/encoding-cyclical-features-24hour-time/
 
-wild_m_tod <- fitHMM(data = wild_move, 
+WB.m.tod <- fitHMM(data = WB.move, 
                      nbStates = 2, 
                      stepPar0 = stepPar0, 
                      anglePar0 = anglePar0, 
                      formula = ~ cos(2*pi*hour/24) + 
                        sin(2*pi*hour/24))
 
-wild_m_tod
+WB.m.tod
 
 # Let's see what the impact of time of day is.
-plotStationary(wild_m_tod,
+plotStationary(WB.m.tod,
                plotCI = T)
 
 # This plot is not quite right actually. Read through the sidebar at the end of the script if you want more detail on why, and how to fix it.
 
 # Let's now see which of these three models is a better fit to the data
-AIC(wild_m_null,
-    wild_m_temp,
-    wild_m_tod)
+AIC(WB.null,
+    WB.m.Temp,
+    WB.m.tod)
 
 # So the null model is preferred over the temp model, but there is strong evidence that time of day is important in determining behavioral state.
 
-# So now let's end by testing to see if there is evidence that a three state model is favored. We have evidence that time of day is important, so we'll keep this variable. And here we are feeding in starting parameters for the 3 state model, using the same gamme and Von Mises distributions.
+# So now let's end by testing to see if there is evidence that a three state model is favored. We have evidence that time of day is important, so we'll keep this variable. And here we are feeding in starting parameters for the 3 state model, using the same gamma and Von Mises distributions.
 
-wild_m_tod_3 <- fitHMM(data = wild_move, 
+WB.m.tod.3 <- fitHMM(data = WB.move, 
                        nbStates = 3, 
                        stepPar0 = stepPar0_3, 
                        anglePar0 = anglePar0_3, 
@@ -416,28 +409,32 @@ wild_m_tod_3 <- fitHMM(data = wild_move,
                        formula = ~ cos(2*pi*hour/24) + 
                          sin(2*pi*hour/24))
 
-
-AIC(wild_m_tod, wild_m_tod_3)
+AIC(WB.m.Temp, WB.m.tod.3, WB.null)
 
 # So there is actually substantial evidence here for 3 states.
 
-wild_m_tod_3
+WB.m.tod.3
+plot(WB.m.tod.3,
+     ask = FALSE)
+plot(WB.m.tod.3,
+     animals = "Sotua",
+     ask = FALSE)
 
 # Interestingly, it seems that the orange state 1 may represent a kind of middle level foraging with relatively low displacement. Step length mean is around 280m and turning angle mean is quite large at 2.88. State 2 blue has an even smaller step length mean of around 170m, and a similarly high turning angle. Perhaps this represents highly focal small scale movements, or perhaps even some sort of resting state. State 3 green is representing large scale directional movements with a mean length of 810m and a turning angle near zero.
 
 # Let's see how much time animals tend to spend in each state.
-wild_states_3tod <- viterbi(wild_m_tod_3)
+WB.states.3tod <- viterbi(WB.m.tod.3)
 
-prop.table(table(wild_states_3tod))
+prop.table(table(WB.states.3tod))
 
 # So across all individuals, state 1, the kind of middle distance focal foraging movement, is the most common, followed by, interestingly, the longer distance directional movement. I would imagine this varies quite a bit across individuals though and we could certainly replicate our graph above for these three states to look across individuals and sexes.
 
 # Let's see how this looks on a map
-plot(wild_m_tod_3,
+plot(WB.m.tod.3,
      ask = FALSE)
 
 # And let's look at the time of day influence on each state probability
-plotStationary(wild_m_tod_3)
+plotStationary(WB.m.tod.3)
 
 # It looks like in general our new state 3, which appears to represent large scale directional movements, is most likely to occur between 5 and 7pm, dusk in eastern Africa. State 2, which is the likely focal foraging state is expected most of the day except around 3pm to 9pm,
 
@@ -449,12 +446,12 @@ plotStationary(wild_m_tod_3)
 
 # In the 3-state model, state 3 represented directional, long range movements. We'll remove these from our new dataset
 
-wild_data_foraging <- wild_data %>% 
+WB.foraging <- WB.data %>% 
   
   # add predicted state information to initial data frame
-  mutate(state = factor(wild_states_3tod),
-         x_ = x_ * 1000,
-         y_ = y_ * 1000) %>%
+  mutate(state = factor(WB.states.3tod),
+         x = x * 1000,
+         y = y * 1000) %>%
   
   # remove hour column
   select(-hour) %>% 
@@ -464,11 +461,11 @@ wild_data_foraging <- wild_data %>%
 
 # An animal like Ntishya had a few focal areas of use, with substantial travel in between. Let's see if removing state 3 helps us focus in on areas of concentrated foraging.
 
-ntishya_all <- wild_data %>% 
-  mutate(state = as.factor(wild_states_3tod)) %>%
+ntishya_all <- WB.data %>% 
+  mutate(state = as.factor(WB.states.3tod)) %>%
   filter(ID == "Ntishya") %>% 
-  ggplot(aes(x = x_*1000,
-             y = y_*1000,
+  ggplot(aes(x = x*1000,
+             y = y*1000,
              col = state,
              fill = state)) +
   geom_path(alpha = 0.5) +
@@ -490,10 +487,10 @@ ntishya_all
 
 # Let's see what her map looks like without the "travel" state.
 
-ntishya_sub <- wild_data_foraging %>% 
+ntishya_sub <- WB.foraging %>% 
   filter(ID == "Ntishya") %>% 
-  ggplot(aes(x = x_,
-             y = y_,
+  ggplot(aes(x = x,
+             y = y,
              col = state,
              fill = state)) +
   #geom_path(alpha = 0.5) +
@@ -516,62 +513,16 @@ ntishya_sub
 two_plots <- cowplot::plot_grid(ntishya_all,
                                 ntishya_sub,
                                 ncol = 2,
-                                rel_widths = c(1, 1)
-)
+                                rel_widths = c(1, 1))
 
 two_plots
 
 # This is an example of how one might save a plot like this for a report or publication:
 
 ggsave(plot = two_plots,
-       filename = "output/plots/ntishya_2maps.tiff",
+       filename = "Output/ntishya_2maps.tiff",
        units = "in",
        width = 6.5,
        height = 4)
 
 # This does seem to have helped, but we still have quite a few points in middle areas. This kind of approach might work better for an animal that forages in more focal, selected habitats, compared to a wide-open herd animal grazing like a wildbeest, but at least you can see the approach here.
-
-
-# PLOTTING AND PREDICTING SIDEBAR - SKIP IF YOU LIKE ####
-
-# In fact in this case the automatic plotting decisions do not work in our case because we did not have any times in the 22nd and 23rd hours. Based on how this function decides what to put on the x axis, we don't get to see the full picture. Because of the circular nature of the time predictor, predicted values in the 23rd hour should approach values in the zero hour. So here I'm going to show how to extract the values we need directly, using other moveHMM functions.
-
-# There are two predicting functions in the package. Those familiar with regression in R will recognize how to use the predict() world of functions. We need to provide a model, which we have, and a set of data to predict values for, using the model equation. We always need to provide a data frame, and it needs to have columns for each covariate we specified in the model, named exactly the same as our data. So here we just need a column with "hour". To make sure we predict state probabilities at each hour, I'm going to specify a sequence of values from 0 to 23, with a total of 100 values in the range.
-
-predValues_hours <- data.frame(hour = seq(from = 0,
-                                          to = 23,
-                                          length = 100))
-
-
-# We could use the predictTPM() function to predict the transition probability matrix, but we want to predict the stationary probabilities, that is, the predicted probabilities for any given "hour". For this we need the predictStationary() function. We need to provide our model, and the data we want to predict for.
-
-pred_mod_hour <- predictStationary(m = wild_m_tod, 
-                                   newData = predValues_hours, 
-                                   returnCI = TRUE, 
-                                   alpha = 0.95)
-
-# The result is a list with the following names. The "mle" is our estimate, and the other two are lower and upper confidence limits.
-names(pred_mod_hour)
-
-# Now we want to plot this, so we can get a sense of how hour of the day impacts state probabilities. First I'll make a data frame of our input data, along with our predicted values. Here I have to select the first column, because that is associate with state 1. I could plot both states on the plot as well, but in this case they are essentially mirror images of each other. The CIs don't work here because we don't have data from every hour, but this code would work for CIs if you did.
-
-pred_plot_data <- data.frame(hour = predValues_hours$hour,
-                             state1prob = pred_mod_hour$mle[,1],
-                             lci = pred_mod_hour$lci[,1],
-                             uci = pred_mod_hour$lci[,1])
-
-ggplot(pred_plot_data,
-       aes(x = hour,
-           y = state1prob)) +
-  geom_ribbon(aes(ymin = lci, 
-                  ymax = uci), 
-              alpha = 0.3) +
-  geom_line(col = "#D55E00") +
-  coord_cartesian(ylim = c(0, 1)) +
-  labs(x = "time of day", 
-       y = "stationary probability") +
-  scale_x_continuous(breaks = seq(0, 24, by = 4)) +
-  scale_y_continuous(breaks = seq(0, 1, by = 0.5), 
-                     labels = c("0", "0.5", "1"))
-
-# Remember that state 1 is the foraging, non-traveling state. This indicates the probability of being in this state declines dramatically during the dusk hours, when animals are apparently much more likely be to moving. This is roughly from 4pm to 9pm. 
