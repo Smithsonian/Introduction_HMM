@@ -149,11 +149,11 @@ WB <- WB %>%
   # Arrange the dataset by id and timestamp
   arrange(id, timestamp)
 
-# Look at header
+# Look at the new, condensed dataset
 head(WB)
 str(WB)
 
-# What tags are included in the study?  How many?
+# Now what tags are included?  How many?
 sort(unique(WB$id))
 length(unique(WB$id))
 
