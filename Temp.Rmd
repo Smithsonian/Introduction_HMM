@@ -5,52 +5,6 @@ date: '2024-07-02'
 output: html_document
 ---
 
-## Load Collar Data
-Load the `.csv` downloaded directly from [Movebank](https://www.movebank.org/). These are my dissertation data that will be used for demonstration purposes. Included with this file is a reference file (also downloaded from [Movebank](https://www.movebank.org/)), which contains additional details (sex, age) about each animal.  
-
-Most important is that any movement dataset included in analysis has the following variables:
-
-1) Unique Animal ID
-2) Time stamp
-3) Coordinates (X/Y)
-
-**NOTE**: If you open the file provided in Excel, do **NOT** save the file before loading it in [R](https://cran.r-project.org/). Excel will change the time stamp column and set it to the time on your computer - obviously not what you want for most studies.
-
-```{r Clean Read, message=FALSE, warning=FALSE}
-# Read files in Data directory (Data File and Accessory File) - FILE IS NOT SPATIAL
-wild <- read_csv("./Data/White-bearded wildebeest in Kenya.csv")
-wild.ref <- read_csv("./Data/White-bearded wildebeest in Kenya-reference-data.csv")
-
-# In this case, the column headers have "-" or ":" in them.  These need to be removed:
-names(wild) <- gsub("-", "", names(wild))
-names(wild) <- gsub(":", "", names(wild))
-names(wild.ref) <- gsub("-", "", names(wild.ref))
-
-# NOTE: When printing to screen, it appears that significant digits have been truncated.  This is not the case.  It is just how R prints the data
-# wild
-# wild$locationlong[1]
-
-# Look at the data and examine the data structure
-#head(wild)
-#str(wild)
-
-#head(wild.ref)
-#str(wild.ref)
-
-# If you have multiple files, rather than a single file with all your animals, you can do something similar to:
-# Change the wildcard (pattern) to what makes most sense to your dataset
-#wild.all <- list.files(path='./data', pattern='Kenya.csv', all.files=FALSE, full.names=TRUE)
-
-# Bind files together
-#wild <- lapply(wild.all, FUN=read_csv)
-#wild <- do.call(rbind, wild)
-
-# In most cases, you won't need to do this, but this file need a few things to be fixed
-#names(wild) <- gsub("-", "", names(wild))
-#names(wild) <- gsub(":", "", names(wild))
-
-```
-
 ## Dataframe Organization & Cleaning
 Many of the columns included in the dataframes are unnecessary.  We need to clean and filter each dataframe and can do so with tools from the [tidyverse] (https://cran.r-project.org/web/packages/tidyverse/index.html) package.  We will update the timezone to the local time zone and subset the start/end dates for each animal to match with what we recorded in our reference dataset.  These dates represent the dates that the collar was deployed on the animal.  To do so we need to join the two dataframes together using a shared primary key (i.e., id). Lastly, we will check on the completeness of the dataset and filter out erroneus data points.
 

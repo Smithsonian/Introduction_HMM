@@ -1,0 +1,334 @@
+---
+title: "Creating an Animal Movement Trajectory"
+author: "Jared Stabach, Smithsonian's National Zoo & Conservation Biology Institute"
+date: '`r format(Sys.time(), "%d %B %Y")`'
+output:
+  html_document:
+    toc: true
+    toc_depth: 4
+    toc_float: 
+      collapsed: true
+      smooth_scroll: true
+    number_sections: false
+    #theme: united
+    #highlight: tango
+pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<a href="https://github.com/Smithsonian/Wildebeest_HMM.git" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#151513; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
+
+# Introduction
+Now that we have imported the wildebeest dataset for analysis and done some initial cleaning, we can take the necessary next steps to create an animal movement trajectory and format the data for analyses investigating changes in animal behavior.  The [moveHMM](https://cran.r-project.org/web/packages/moveHMM/index.html) package expects the data to be regularly sampled with negligible positional error.  This dataset **must** also be organized in sequential order.  
+
+We will use the ([adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html)) package in [R](https://cran.r-project.org/) to convert our dataframe to an animal movement trajectory.  However, other packages also exist (e.g., [amt](https://cran.r-project.org/web/packages/amt/index.html), [move2](https://cran.r-project.org/web/packages/move2/index.html)).  These packages differ in the commands and workflow used, but will provide the same end product for further analyses.  Please see the vignettes included with each package for further instruction.
+
+<div style="float:right">
+<img width="270" height="176" src="Mvmt.png">
+</div>
+
+In this exercise, we will:
+
+  * Investigate the [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html) package for analyzing animal movement data
+  * Clean the animal movement trajectory and make the track 'regular'
+  * Visualize plots of animal movement
+  * Extract an environmental variable and learn how to append it to our dataset for further analyses
+
+## Load Libraries
+Load the required libraries and remove everything held in [R's](https://cran.r-project.org/) memory.
+
+```{r Setup, message=FALSE, warning=FALSE, echo=TRUE}
+# Remove items from memory/clean your workspace
+rm(list=ls())
+
+# You may need to install these packages first
+#install.packages('sf', 'adehabitatLT', 'gridExtra', 'tidyverse')
+
+# Load libraries
+library(sf)
+library(adehabitatLT)
+library(gridExtra)
+library(tidyverse)
+```
+
+## Set Time Zone & Coordinate System
+Values are specific to our dataset.
+
+```{r Clean Timezone, message=FALSE, warning=FALSE}
+# TimeZone
+Timezone1 <- 'UTC'
+Timezone2 <- "Africa/Nairobi"
+ 
+# Spatial Reference
+LatLong.proj <- "EPSG:4326"
+UtmZone.proj <- "EPSG:32737"
+```
+
+## Data Import
+Load the data from the previous exercise.
+
+```{r Data Import, message=FALSE, warning=FALSE, echo=TRUE}
+# Data load/import
+load("./Data/wildebeest_data.rdata")
+
+# The WB and WB.sf objects have been loaded in our project Environment.  Remember the the WB.sf file is essentially the same as the WB object, except that the data are projected (the dataset includes geographic coordinates)
+# We can also use the ls() argument to list all files in our Environment/Workspace.
+# ls()
+
+# Data are projected to UTM Zone 37S, WGS84.  Check the projection.
+# st_crs(WB.sf)
+
+# AdeHabitatLT requires a dataframe for analyses.
+# Let's use the WB.sf dataset because the data have been projected.  To use this file with adehabitatLT, we need to convert it to a 'flat' dataframe.  Important that we keep the coordinates.
+
+# Dataframe conversion
+WB.data <- WB.sf %>%
+  as_tibble() %>%
+  mutate(X = st_coordinates(WB.sf)[ ,1],
+         Y = st_coordinates(WB.sf)[ ,2]) %>%
+  dplyr::select(-geometry)
+
+head(WB.data)
+```
+
+# Data Quality & Summary
+Nearly all telemetry datasets have some sort of data quality flag included with the recorded positions. Since every manufacturer has different ways to report error, you’ll have to familiarize yourself with your own dataset. For example, some manufacturers report SPS (Standard Positioning System) or DGPS (Differential GPS) positions, while others report a measure of the type of positions (e.g., 1D, 2D, 3D). Best is when manufacturers report a Dilution of Precision (DOP). In this last step, we’ll assess DOP and then create a 2D trajectory to summarize and graph results.
+
+## Dilution of Precision (DOP)
+Lotek GPS collars (the manufacturer we are using here) are provided with a DOP measure. As noted by Chris, placing your GPS devices in an open constellation before fitting on your animals is recommended.  This then provides the validation data required to assess GPS error/scattering.  This is often device specific.  Here, I’ll show a very basic way of filtering poor quality data points, although many other options exist (e.g., speed-based filtering).
+
+```{r DOP, message=FALSE, warning=FALSE, echo=TRUE}
+# Plot the DOP values for confirmation.  
+# For this dataset, we will examine whether the position is 2D or 3D and then use a qualitative filter to remove poor positions
+# Here, I am being more restrictive on 2D positions (dop < 5.0) than 3D positions (dop < 10.0).
+
+# Let's first get a summary of how many records are in the dataset before removing records.
+val1 <- nrow(WB.data)
+
+# Plot
+P1 <- 
+  WB.data %>%
+  ggplot(aes(x = DOP)) +
+  geom_histogram(color = "black", fill = "white", bins = 25) +
+  labs(title = "GPS Data", x = "DOP", y = "Frequency") +
+  geom_vline(xintercept = 10, color = "red", linetype = "dotted", size = 1) +
+  theme_classic()
+
+# Filter/subset
+WB.data <- 
+  WB.data %>% 
+  filter(
+    fixType == 3 & DOP < 10 | fixType == 2 & DOP < 5) # Only accept position with a 3D fixtype and DOP less than 10 or a 2D fixtype and DOP less than 5
+
+# How many records now after filtering?
+val2 <- nrow(WB.data)
+
+# Plot again
+P2 <- 
+  WB.data %>%
+  ggplot(aes(x = DOP)) +
+  geom_histogram(color = "black", fill = "white", bins = 25) +
+  labs(title = "GPS Data - DOP Filtered", x = "DOP", y = "Frequency") +
+  geom_vline(xintercept = 10, color = "red", linetype = "dotted", size = 1) +
+  theme_classic()
+
+# Plot the data together
+grid.arrange(P1, P2, ncol = 2)
+
+# What's the percent of data that have been removed?
+round((val1-val2)/val1, digits = 4)
+
+# Only 333 records (<1% of data) were removed based on the criteria we used.
+```
+
+# Create Animal Trajectory
+An animal track in the [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html) package is referred to as a trajectory. Type II trajectories are those for which each location is associated with a recorded time. The data input needs to be a dataframe with xy coordinates. 
+
+We use the as.ltraj function to create individual animal trajectories and use the infolocs command to include attributes of the data that we want to maintain/use later. The "slsp" argument indicates how to deal with turning angles when successive locations are in the same place. See the `help` menu for additional details.
+
+```{r Trajectory, message=FALSE, warning=FALSE, echo=TRUE}
+# Extract the X and Y coordinates to input into as.ltraj
+XY <- WB.data %>% 
+  dplyr::select(X:Y) %>% 
+  as.data.frame()
+
+# Create trajectory
+WB.traj <-as.ltraj(xy = XY,
+                       date = WB.data$timestamp,
+                       id = WB.data$animal_id,
+                       typeII = TRUE, 
+                       infolocs = WB.data[ ,3:6],
+                       slsp = "missing")
+
+# Look at the summary of the created object
+WB.traj
+```
+
+## Visualizing the Ltraj Object
+The [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html) contains multiple plotting functions for visualizing the animal movement trajectory and/or investigating potential problems with the movement path.
+
+```{r Trajectory Plotting, message=FALSE, warning=FALSE, echo=TRUE}
+# Use plot with the ltraj object to view all animals together
+# This plot gives a good perspective of the scale of each animals' movements
+plot(WB.traj)
+
+# Or view each animal separately using vector notation
+plot(WB.traj[1])
+
+# We can also specify the name of the animals we want to plot 
+# unique(WB.data$animal_id)
+# plot(WB.traj,
+#      id = c("Kikaya", "Karbolo", "Peria", "Sotua"))
+
+# View the columns included in the data object
+#names(WB.traj[[1]])
+#head(WB.traj[[1]])
+
+# Contents of the ltraj object:
+# dt: time between locations in seconds
+# dist: distance between the next location
+# R2n: net squared displacement
+# abs.angle: absolute turning angle
+# rel.angle: relative turning angle
+# dx and dy represent the change in the x and y directions.
+
+# A variety of additional plotting options also exist in the package.  See help(plotltr).
+#plotltr(WB.traj[1], which = "dist")
+#plotltr(WB.traj[1], which = "dt")
+#plotltr(WB.traj[1], which = "DOP")
+```
+
+## Resampling the Trajectory
+The summary of the trajectory above highlights that no NAs exist in our entire dataframe.  This is because the function `as.ltraj` does not recognize the movement interval and therefore, does not identify positions that were not collected.  In [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html), the fix interval is a parameter that we must manually set.  
+
+In our dataset, data were collected irregularly (i.e., every hour between 0600 and 1800 and every three hours from 1800 to 0600 (local time).  Because we need a regular trajectory for the [moveHMM](https://cran.r-project.org/web/packages/moveHMM/index.html) package, we will resample all the data to a 3 hour interval.  This means we will lose some data in the process.  To resample the data, we must use a two step process:
+
+  1. Use the `setNA()` function to resample the data to a 3 hour interval and set all no data records to NA.  
+  2. Use the `sett0()` function to round all the times to the exact time interval (i.e., make the trajectory regular).
+
+```{r Resample, message=FALSE, warning=FALSE, echo=TRUE}
+# Here, we will use the first location in the dataset as the reference date/time.  This works in this case because it is divisible by the by the 3 hour interval that I want to resample the data to.
+
+# Set reference date/time
+refda <- WB.traj[[1]]$date[1]
+
+# Set all null values to NA.  Based on 3 hour interval
+WB.traj.na <- setNA(WB.traj, 
+                    date.ref = refda, 
+                    dt = 3, 
+                    units = "hour") 
+
+# Summarize the new dataset
+# WB.traj.na
+
+# Is the trajectory regular?
+is.regular(WB.traj.na)
+
+# Create a regular trajectory by rounding the time to the exact time intervals.
+WB.traj.reg <- sett0(WB.traj.na, 
+                      date.ref = refda, 
+                      dt = 3, 
+                      units = "hour")
+
+# Summarize the new dataset
+# WB.traj.reg
+
+# Is the trajectory regular?
+is.regular(WB.traj.reg)
+```
+
+# Visualize Animal Trajectory
+[AdehabitatLT]() has a number of plotting options. I use these sometimes, but usually prefer to create my own plots from the variables created using the [AdehabitatLT]() functions. Here, I provide a simple example of a movement trajectory, with a “for loop” to plot each animal. I find the net squared displacement plots and steplengths to be interesting to look at, helping to identifying potential outliers and/or errors in the data. These plots can also be helpful in informing potential research questions.
+
+```{r Plotting, message=FALSE, warning=FALSE, echo=TRUE}
+#plotltr(traj.NA[1],"dt/60") 
+
+# My preference is to create a custom plot
+# Setup a plotting layout with three panels
+layout(matrix(c(1,1,2,3), 2, 2, byrow = FALSE), widths=1, heights=c(1,1))
+
+# Here, we will "loop" over every individuals (by id)
+Id.val <- unique(wild.df$id)
+
+#for (i in 1:length(Id.val)){  # Uncomment out
+i <- 1 ###### Remove to loop over all animals
+# ****************************** 
+
+  # Remove the NAs and subset to id == Id.val[i]
+  wild.sub <- subset(wild.df[!is.na(wild.df$x),], id == Id.val[i]) # This is just to account for NAs that have been added from as.ltraj function
+  
+  # Calculate the total days tracked
+  time.diff <- trunc(difftime(format(wild.sub$date[1],tz=Timezone2),format(wild.sub$date[nrow(wild.sub)],tz=Timezone2),units="days"))
+  
+  # Plot the trajectory
+  plot(wild.sub$x,wild.sub$y,typ="l",xlab="Easting",ylab="Northing",main=paste0(wild.sub$id[1]," Movement"),frame=FALSE,axes=FALSE,asp=1)
+     mtext(paste0(format(wild.sub$date[1],"%Y-%m-%d")," to ",format(wild.sub$date[nrow(wild.sub)],"%Y-%m-%d")),cex=0.75)
+     axis(1, labels=TRUE)
+     axis(2, labels=TRUE)
+  points(wild.sub$x,wild.sub$y,pch=16,cex=0.5,col="blue")
+  points(wild.sub$x[1],wild.sub$y[1],pch=17,cex=1,col="green")
+  points(wild.sub$x[nrow(wild.sub)],wild.sub$y[nrow(wild.sub)],pch=15,cex=1,col="red")
+  
+  # Plot the movements over time (Velocity)
+  plot(wild.sub$date, wild.sub$dist/1000, type='l', ylab="Distance moved (km)", xlab="Time", main="Steplengths", frame=FALSE)
+    # Calculate the time from release date  
+    mtext(paste0(abs(time.diff)," days"),cex=0.75)
+  
+  # Plot the net displacement per step
+  plot(wild.sub$date, sqrt(wild.sub$R2n)/1000, type='l', ylab="Distance (km)", xlab="Days Since Release", main="Net Displacement",frame=FALSE)
+    mtext(paste0(abs(time.diff)," days"),cex=0.75)
+```
+
+# Summarize Results
+Using the `summary` function
+
+```{r Summarize, message=FALSE, warning=FALSE, echo=TRUE}
+# Summarize the movement trajectory
+Summary.traj <- summary(WB.traj.reg)
+
+# Note that nb.reloc is the total number of relocations collected at a 3 Hour sampling interval.  Any missing data have been filled with a NA, allowing us to calculate the percent complete (again based on a 3 hour interval).  We can add to the summary table, including useful information such as percent complete and duration of the tracking period.
+
+# Add details to the summary table
+Summary.traj <-
+  Summary.traj %>% 
+  mutate(
+    Duration = round(difftime(date.end, 
+                              date.begin,
+                              units = "days"),
+                     digits = 2),
+    Records = nb.reloc - NAs,
+    PctComplete = round((Records/nb.reloc)*100,
+                        digits = 2))
+
+# View the table
+Summary.traj
+```
+
+## Calculate Movement Metrics
+
+```{r Metrics, message=FALSE, warning=FALSE, echo=TRUE}
+# # Convert trajectory with movement statistics to a dataframe
+# wild.df <-ld(traj.NA)
+# 
+# # Calculate basic movement statistics.  This are just some initial statistics
+# # REMEMBER: this is a 3 hour data.  Therefore, movements are simply based on the linear steps.
+# Mvmt.Statistics <- ddply(wild.df,"id", summarise,
+#               AvgMove = round(mean(dist/1000,na.rm=TRUE),digits=2), # Convert to km
+#               SumMove = round(sum(dist/1000,na.rm=TRUE),digits=2), # Convert to km
+#               MaxDisp=round(max(sqrt(R2n)/1000,na.rm=TRUE),digits=2)) # Convert to km
+# Mvmt.Statistics
+```
+
+# Extract Anthropogenic Disturbance
+  
+# Save Output
+[AdehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html) has a nice function (i.e., `ld()`) that converts the trajectory into a dataframe.  Save this file for further analyses investigating animal behavior.
+
+```{r Save, message=FALSE, warning=FALSE, echo=TRUE}
+# Convert ltraj object to dataframe and save for further analyses
+WB.traj.reg <- ld(WB.traj.reg)
+write_rds(WB.traj.reg, file = "Data/wildebeest_3hr_adehabitat.rds")
+```
