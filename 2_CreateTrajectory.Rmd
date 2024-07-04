@@ -35,7 +35,6 @@ In this exercise, we will:
   * Investigate the [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html) package for analyzing animal movement data
   * Clean the animal movement trajectory and make the track 'regular'
   * Visualize plots of animal movement
-  * Extract an environmental variable and learn how to append it to our dataset for further analyses
 
 ## Load Libraries
 Load the required libraries and remove everything held in [R's](https://cran.r-project.org/) memory.

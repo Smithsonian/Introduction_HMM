@@ -1,13 +1,6 @@
-# ******************************************************************
-# ******************************************************************
-
-# Project: Intro to Animal Mvmts
 # Description: Fit Hidden Markov Models with moveHMM.  Code based on exercises developed by Joe Kolowski with sections modified from the moveHMM guide.  Many thanks to Joe and Theo Michelot for the helpful information provided.
 # Author: Jared Stabach
 # Date: 16 June 2024
-
-# ******************************************************************
-# ******************************************************************
 
 ### Objectives:   
 # 1. Learn the analysis workflow for fitting Hidden Markov Models with moveHMM
