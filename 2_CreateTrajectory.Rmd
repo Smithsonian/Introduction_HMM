@@ -167,40 +167,6 @@ WB.traj <-as.ltraj(xy = XY,
 WB.traj
 ```
 
-## Visualizing the Ltraj Object
-The [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html) contains multiple plotting functions for visualizing the animal movement trajectory and/or investigating potential problems with the movement path.
-
-```{r Trajectory Plotting, message=FALSE, warning=FALSE, echo=TRUE}
-# Use plot with the ltraj object to view all animals together
-# This plot gives a good perspective of the scale of each animals' movements
-plot(WB.traj)
-
-# Or view each animal separately using vector notation
-plot(WB.traj[1])
-
-# We can also specify the name of the animals we want to plot 
-# unique(WB.data$animal_id)
-# plot(WB.traj,
-#      id = c("Kikaya", "Karbolo", "Peria", "Sotua"))
-
-# View the columns included in the data object
-#names(WB.traj[[1]])
-#head(WB.traj[[1]])
-
-# Contents of the ltraj object:
-# dt: time between locations in seconds
-# dist: distance between the next location
-# R2n: net squared displacement
-# abs.angle: absolute turning angle
-# rel.angle: relative turning angle
-# dx and dy represent the change in the x and y directions.
-
-# A variety of additional plotting options also exist in the package.  See help(plotltr).
-#plotltr(WB.traj[1], which = "dist")
-#plotltr(WB.traj[1], which = "dt")
-#plotltr(WB.traj[1], which = "DOP")
-```
-
 ## Resampling the Trajectory
 The summary of the trajectory above highlights that no NAs exist in our entire dataframe.  This is because the function `as.ltraj` does not recognize the movement interval and therefore, does not identify positions that were not collected.  In [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html), the fix interval is a parameter that we must manually set.  
 
@@ -238,6 +204,40 @@ WB.traj.reg <- sett0(WB.traj.na,
 
 # Is the trajectory regular?
 is.regular(WB.traj.reg)
+```
+
+## Visualizing the Ltraj Object
+The [adehabitatLT](https://cran.r-project.org/web/packages/adehabitatLT/index.html) contains multiple plotting functions for visualizing the animal movement trajectory and/or investigating potential problems with the movement path.
+
+```{r Trajectory Plotting, message=FALSE, warning=FALSE, echo=TRUE}
+# Use plot with the ltraj object to view all animals together
+# This plot gives a good perspective of the scale of each animals' movements
+plot(WB.traj)
+
+# Or view each animal separately using vector notation
+plot(WB.traj[1])
+
+# We can also specify the name of the animals we want to plot 
+# unique(WB.data$animal_id)
+# plot(WB.traj,
+#      id = c("Kikaya", "Karbolo", "Peria", "Sotua"))
+
+# View the columns included in the data object
+#names(WB.traj[[1]])
+#head(WB.traj[[1]])
+
+# Contents of the ltraj object:
+# dt: time between locations in seconds
+# dist: distance between the next location
+# R2n: net squared displacement
+# abs.angle: absolute turning angle
+# rel.angle: relative turning angle
+# dx and dy represent the change in the x and y directions.
+
+# A variety of additional plotting options also exist in the package.  See help(plotltr).
+#plotltr(WB.traj[1], which = "dist")
+#plotltr(WB.traj[1], which = "dt")
+#plotltr(WB.traj[1], which = "DOP")
 ```
 
 # Visualize Animal Trajectory
