@@ -44,7 +44,7 @@ Load the required libraries and remove everything held in [R's](https://cran.r-p
 rm(list=ls())
 
 # You may need to install these packages first
-#install.packages('sf', 'adehabitatLT', 'gridExtra', 'tidyverse', )
+#install.packages('sf', 'adehabitatLT', 'gridExtra', 'tidyverse')
 
 # Load libraries
 library(sf)
