@@ -2,7 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-*.Rmd
+.Rmd
 *.pptx
 *.Rproj
 Export_to_R.R
