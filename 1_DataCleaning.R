@@ -1,7 +1,3 @@
-## ----setup, include=FALSE----------------------------------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE)
-
-
 ## ----Clean Libraries, message=FALSE, warning=FALSE---------------------------------------------------
 # Remove from memory
 rm(list=ls())
@@ -12,7 +8,7 @@ rm(list=ls())
 # Load required libraries
 library(svDialogs)
 library(tidyverse)
-library(move2)
+library(move)
 library(lubridate)
 library(tmap)
 library(sf)
@@ -63,14 +59,14 @@ names(WB.ref) <- gsub("-", "_", names(WB.ref))
 # Set Movebank Login Details
 # UN <- dlgInput("Enter Movebank UserName: ", Sys.info()[""])$res
 # PW <- dlgInput("Enter Movebank Password: ", Sys.info()[""])$res
-
-# Details
+# 
+# # Details
 # login <- movebankLogin(username=UN, password=PW)
- 
-# Pull Data from Movebank and convert to a dataframe
+# 
+# # Pull Data from Movebank and convert to a dataframe
 # WB <- as.data.frame(getMovebankData(study = "White-bearded wildebeest (Connochaetes taurinus) movements - Kenya", login = login))
- 
-# Reference Data - No need to import here, as data are already subset in Movebank
+# 
+# # Reference Data - No need to import here, as data are already subset in Movebank
 # WB.ref <- getMovebankReferenceTable(study = "White-bearded wildebeest (Connochaetes taurinus) movements - Kenya", login = login)
 
 

@@ -1,7 +1,3 @@
-## ----setup, include=FALSE----------------------------------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE)
-
-
 ## ----Setup, message=FALSE, warning=FALSE, echo=TRUE--------------------------------------------------
 # Remove items from memory/clean your workspace
 rm(list=ls())
@@ -303,7 +299,7 @@ plot(WB.tod,
 # Encode the behaviors using the Viterbi algorithm
 WB.tod.states <- viterbi(WB.tod)
 
-# add to the dataset and remove some extra fiels
+# add to the dataset and remove some extra fields
 WB.states <- WB.move %>% 
   mutate(state = as.factor(WB.tod.states)) %>% 
   # Remove some fields to make dataset smaller

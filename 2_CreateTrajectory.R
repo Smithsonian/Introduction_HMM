@@ -1,7 +1,3 @@
-## ----setup, include=FALSE----------------------------------------------------------------------------
-knitr::opts_chunk$set(echo = TRUE)
-
-
 ## ----Setup, message=FALSE, warning=FALSE, echo=TRUE--------------------------------------------------
 # Remove items from memory/clean your workspace
 rm(list=ls())
