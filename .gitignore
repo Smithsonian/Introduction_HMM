@@ -2,10 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
-*.Rmd
-*.pptx
-*.Rproj
-Export_to_R.R
 Mvmt.png
 DSC_0287.JPG
 Movement_1_Intro.html
